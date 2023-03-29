@@ -14,13 +14,17 @@
 # limitations under the License.
 #
 import flask
-from flask import Flask, request
+from flask import Flask, request, redirect, Response
 from flask_sockets import Sockets
 import gevent
 from gevent import queue
+from geventwebsocket.handler import WebSocketHandler
 import time
 import json
 import os
+
+# INSTALL WAITRESS FOR THE TIME BEING SWITCH TO fcntl on lab machine
+
 
 app = Flask(__name__)
 sockets = Sockets(app)
@@ -69,17 +73,29 @@ myWorld.add_set_listener( set_listener )
 @app.route('/')
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
-    return None
+    return redirect("/static/index.html", code=302)
+
+
 
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
     # XXX: TODO IMPLEMENT ME
+    while not ws.closed:
+        data = ws.recieve()
+        print(data)
+        
+
+
+
     return None
 
 @sockets.route('/subscribe')
 def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
        websocket and read updates from the websocket '''
+    
+
+
     # XXX: TODO IMPLEMENT ME
     return None
 
@@ -99,23 +115,25 @@ def flask_post_json():
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
     '''update the entities via this interface'''
-    return None
+  
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
     '''you should probably return the world here'''
-    return None
+    return json.dumps(myWorld.world())
 
 @app.route("/entity/<entity>")    
 def get_entity(entity):
     '''This is the GET version of the entity interface, return a representation of the entity'''
-    return None
+    x = myWorld.get(entity) # Returns the entity which holds multiple key value pairs
+    return json.dumps(x) # Returns the entity as a JSON
 
 
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
-    return None
+    myWorld.clear()
+    return json.dumps(myWorld.world())
 
 
 
@@ -124,5 +142,7 @@ if __name__ == "__main__":
         pip install gunicorn
         and run
         gunicorn -k flask_sockets.worker sockets:app
+        or on windows 
+        waitress-serve --listen=127.0.0.1:5000 sockets:app
     '''
     app.run()
