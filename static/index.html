@@ -22,7 +22,13 @@
     "/>
     <script src="json2.js"></script>
   </head> 
-  <body bgcolor="white" height="100%" width="100%"> 
+  <div style="position:relative; display: inline-block;" >
+    <h1 style="color:rgb(255, 255, 255); margin:0; display: inline-block;">
+        Draw something!
+        <input style="display: inline-block; background-color: wheat; border: solid; border-color: lightgray;" id="clear" type="button" value="clear" onclick="clearButton();" />
+    </h1>
+  </div>
+  <body bgcolor="black" height="100%" width="100%">  
     <div id="debug"></div>
     <canvas id="c" width="100%" height="100%" style="-webkit-tap-highlight-color: transparent;"></canvas> 
 
@@ -37,6 +43,7 @@ var wscounter = 0;
 var socket;
 
 
+
 function debug(str) {
     var debugDiv = document.getElementById('debug');
     debugDiv.innerHTML = "" + str;
@@ -48,14 +55,15 @@ world = {};
 //XXX: TODO Make this prettier!
 function drawCircle(context,entity) {
     with(context) {
-        beginPath();                
-        lineWidth = 3;
+        beginPath();              
+        lineWidth = 0;
         var x = entity["x"];
         var y = entity["y"];
         //moveTo(x,y);
         fillStyle = entity["colour"];
         strokeStyle = fillStyle;
         arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
+        fill()
         stroke();                                
     }
 }
@@ -123,12 +131,24 @@ function getPosition(e) {
 }
 
 function addEntity(entity, data) {
+    let mydict = {};
     world[entity] = data;
     drawNextFrame(); // (but should we?)
+    drawFrame();
+    console.log(entity)
+    mydict[entity]=data
+    
     //XXX: Send a XHTML Request that updates the entity you just modified!
-
+    // combined_data = str(entity) + str(data)
+    socket.send(JSON.stringify(mydict));
 
 }
+
+function clearButton(){
+    
+
+}
+
 var counter = 0;
 function addEntityWithoutName(data) {
     var name = "X"+(counter++)%100;
@@ -234,21 +254,45 @@ mouse = (function() {
 // Add the application specific mouse listeners!
 //XXX: TODO Make these prettier!
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'lightgray','radius':10});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'lightgray','radius':10});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
+    addEntityWithoutName({'x':x,'y':y,'colour':'lightgray',
                           'radius':10});
 });
 
 
-function update() {
-    drawFrame();
+function getWorld(pythonworld){
+
+
+    //checks to see if we have cleared the board and clear it 
+
+    // console.log("recieved world: ",pythonworld)
+
+    if (Object.keys(pythonworld).length === 0){
+        for (key in world){
+            world[key]["colour"]="#000"
+        }
+        
+        drawNextFrame();
+        drawFrame();
+        world = {};
+        counter=0;
+    }
+
+    // update elements that were pushed to the world
+    else{
+        for (key in pythonworld){
+            world[key]=pythonworld[key];
+        }
+        drawNextFrame();
+        drawFrame();
+    }
 }
 
 
@@ -257,21 +301,28 @@ function wsSetup() {
     socket = new WebSocket(url);
     socket.onopen = function() {
         //XXX: TODO What are you going to do here?
-        console.log("connected");
-        socket.send("anyone there");
+        // we will send information on what connection this is and start a new listener on the other end
+       
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
     };
     socket.onmessage = function(msg) {  
         try {
-            debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            //debug("WebSocket Recv:" + msg.data);
+            //XXX: TODO What are you going to do here?
+
+            getWorld(JSON.parse(msg.data))
+           
+
+                     
         } catch (e) {
             alert("socket on message: " + e);
         }
     }; 
 }
+
+
 
 wsSetup();
 
@@ -279,7 +330,7 @@ wsSetup();
 
 
 // 30 frames per second
-setInterval( update, 1000/30.0);
+// setInterval( update, 1000/30.0);
 
 
     </script>

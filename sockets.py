@@ -23,12 +23,11 @@ import time
 import json
 import os
 
-# INSTALL WAITRESS FOR THE TIME BEING SWITCH TO fcntl on lab machine
-
 
 app = Flask(__name__)
 sockets = Sockets(app)
 app.debug = True
+clients = list()
 
 class World:
     def __init__(self):
@@ -63,13 +62,52 @@ class World:
     def world(self):
         return self.space
 
-myWorld = World()        
+myWorld = World()      
+
+
+# ---------------------------------------------------------------------
+# Implementation of following two functions inspired by
+# https://github.com/abramhindle/WebSocketsExamples/blob/master/chat.py
+# Author: Abram Hindle
+# ---------------------------------------------------------------------
+def send_all(msg):
+    for client in clients:
+        client.put( msg )
+
+
+def send_all_json(obj):
+    send_all( json.dumps(obj) )
+
+
 
 def set_listener( entity, data ):
     ''' do something with the update ! '''
+    newdict = {}
+    newdict[entity]=data
+    send_all_json(newdict) # Send update to all clients
+
+
 
 myWorld.add_set_listener( set_listener )
+
+
+# ---------------------------------------------------------------------
+# Implementation of following Class inspired by
+# https://github.com/abramhindle/WebSocketsExamples/blob/master/chat.py
+# Author: Abram Hindle
+# ---------------------------------------------------------------------
+class Client:
+    def __init__(self):
+        self.queue = queue.Queue()
+
+    def put(self, v):
+        self.queue.put_nowait(v)
+
+    def get(self):
+        return self.queue.get()
+
         
+
 @app.route('/')
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
@@ -77,27 +115,67 @@ def hello():
 
 
 
+# ---------------------------------------------------------------------
+# Implementation of following function inspired by
+# https://github.com/abramhindle/WebSocketsExamples/blob/master/chat.py
+# Author: Abram Hindle
+# ---------------------------------------------------------------------
+
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
     # XXX: TODO IMPLEMENT ME
-    while not ws.closed:
-        data = ws.recieve()
-        print(data)
+
+    '''A greenlet function that reads from the websocket'''
+    try:
+        while True:
+            msg = ws.receive()
+            print ("WS RECV: %s" % msg)
+            if (msg is not None):
+                packet = json.loads(msg)
+                for key, value in packet.items():
+                    myWorld.set(key,value)
+                # send_all_json( packet )
+
+            else:
+                break
+    except:
+        '''Done'''
+
         
-
-
-
     return None
+
+
+# ---------------------------------------------------------------------
+# Implementation of following function inspired by
+# https://github.com/abramhindle/WebSocketsExamples/blob/master/chat.py
+# Author: Abram Hindle
+# ---------------------------------------------------------------------
 
 @sockets.route('/subscribe')
 def subscribe_socket(ws):
     '''Fufill the websocket URL of /subscribe, every update notify the
        websocket and read updates from the websocket '''
     
+    client = Client()
+    clients.append(client)
+    g = gevent.spawn( read_ws, ws, client )    
+    try:
+        while True:
+            msg = client.get() 
+            ws.send(msg)
+            
+            
+    except Exception as e:# WebSocketError as e:
+        print ("WS Error %s" % e)
+    finally:
+        clients.remove(client)
+        gevent.kill(g)
 
 
-    # XXX: TODO IMPLEMENT ME
-    return None
+
+
+    # # XXX: TODO IMPLEMENT ME
+    # return None
 
 
 # I give this to you, this is how you get the raw body/data portion of a post in flask
@@ -115,7 +193,10 @@ def flask_post_json():
 @app.route("/entity/<entity>", methods=['POST','PUT'])
 def update(entity):
     '''update the entities via this interface'''
-  
+    #  myWorld.set(entity,mydata) #Set my world point to the entity and data
+    # setentity = myWorld.get(entity)
+    # return json.dumps(setentity)
+   
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
@@ -145,4 +226,23 @@ if __name__ == "__main__":
         or on windows 
         waitress-serve --listen=127.0.0.1:5000 sockets:app
     '''
+
+   
     app.run()
+    # server = pywsgi.WSGIServer(('', 5000), app, handler_class=WebSocketHandler)
+    # server.serve_forever()
+    
+    # server_greenlet = gevent.spawn(server.serve_forever)
+    
+    #while True:
+         #try:
+    #         # Accept a new connection
+    #         client_socket, address = server._listener.accept()
+
+    #         # Spawn a new greenlet to handle the connection
+    #         gevent.spawn(server.handle, client_socket, address)
+    #     except KeyboardInterrupt:
+    #         break
+
+    # server_greenlet.kill()
+    # server.stop()
