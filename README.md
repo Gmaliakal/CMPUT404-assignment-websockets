@@ -20,7 +20,7 @@ pip install -r requirements.txt
 Contributors / Licensing
 ========================
 
-Generally everything is LICENSE'D under the Apache 2 license by Abram Hindle.
+Generally everything is LICENSE'D under the Apache 2 license by Abram Hindle and Georgin Maliakal
 
 freetests.py is LICENSE'D under a BSD-like license:
 
@@ -59,3 +59,13 @@ Contributors
 * Mark Galloway
 * Abram Hindle
 * Cole Mackenzie
+* Georgin Maliakal
+
+
+External Source Code
+====================
+Fragments of code from Abram Hindles chat.py in their Websockets examples repository were used in the implementation of sockets.py. 
+---------------------------------------------------------------------
+Source: https://github.com/abramhindle/WebSocketsExamples/blob/master/chat.py
+Author: Abram Hindle
+---------------------------------------------------------------------

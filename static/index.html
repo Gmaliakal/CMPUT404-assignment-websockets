@@ -6,7 +6,7 @@
     <meta content='width=device-width; height=device-height; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
     <meta name="viewport" content="width=device-width" />
     <meta name="license" content="
-        Copyright 2013 Google, Abram Hindle
+        Copyright 2013 Google, Abram Hindle and Georgin Maliakal
         
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@
   </head> 
   <div style="position:relative; display: inline-block;" >
     <h1 style="color:rgb(255, 255, 255); margin:0; display: inline-block;">
-        Draw something!
-        <input style="display: inline-block; background-color: wheat; border: solid; border-color: lightgray;" id="clear" type="button" value="clear" onclick="clearButton();" />
+        Draw something using Websockets!
+       
     </h1>
   </div>
   <body bgcolor="black" height="100%" width="100%">  
@@ -144,10 +144,6 @@ function addEntity(entity, data) {
 
 }
 
-function clearButton(){
-    
-
-}
 
 var counter = 0;
 function addEntityWithoutName(data) {

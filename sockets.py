@@ -123,9 +123,6 @@ def hello():
 
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
-    # XXX: TODO IMPLEMENT ME
-
-    '''A greenlet function that reads from the websocket'''
     try:
         while True:
             msg = ws.receive()
@@ -158,11 +155,13 @@ def subscribe_socket(ws):
     
     client = Client()
     clients.append(client)
-    g = gevent.spawn( read_ws, ws, client )    
+    g = gevent.spawn( read_ws, ws, client )   
+    client.put(json.dumps(myWorld.world())) # for updating the world upon connecting
     try:
         while True:
             msg = client.get() 
             ws.send(msg)
+            
             
             
     except Exception as e:# WebSocketError as e:
@@ -171,11 +170,6 @@ def subscribe_socket(ws):
         clients.remove(client)
         gevent.kill(g)
 
-
-
-
-    # # XXX: TODO IMPLEMENT ME
-    # return None
 
 
 # I give this to you, this is how you get the raw body/data portion of a post in flask
@@ -214,6 +208,7 @@ def get_entity(entity):
 def clear():
     '''Clear the world out!'''
     myWorld.clear()
+    send_all_json(myWorld.world())
     return json.dumps(myWorld.world())
 
 
@@ -227,22 +222,5 @@ if __name__ == "__main__":
         waitress-serve --listen=127.0.0.1:5000 sockets:app
     '''
 
-   
     app.run()
-    # server = pywsgi.WSGIServer(('', 5000), app, handler_class=WebSocketHandler)
-    # server.serve_forever()
-    
-    # server_greenlet = gevent.spawn(server.serve_forever)
-    
-    #while True:
-         #try:
-    #         # Accept a new connection
-    #         client_socket, address = server._listener.accept()
-
-    #         # Spawn a new greenlet to handle the connection
-    #         gevent.spawn(server.handle, client_socket, address)
-    #     except KeyboardInterrupt:
-    #         break
-
-    # server_greenlet.kill()
-    # server.stop()
+ 
